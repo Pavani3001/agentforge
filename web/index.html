@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AgentForge</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 960px; margin: 0 auto; padding: 2rem; }
+      textarea, button { font: inherit; }
+      textarea { width: 100%; box-sizing: border-box; min-height: 7rem; margin: .4rem 0 1rem; padding: .75rem; }
+      button { padding: .65rem 1rem; cursor: pointer; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .panel { border: 1px solid #8886; border-radius: .5rem; padding: 1rem; margin-top: 1rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+      .error { color: #d55; }
+      @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <h1>AgentForge</h1>
+    <p>Generate a specialized agent, run it, evaluate the result, and improve failures.</p>
+    <form id="run-form">
+      <label for="objective">Objective</label>
+      <textarea id="objective" required placeholder="Describe what the agent should accomplish"></textarea>
+      <label for="criteria">Evaluation criteria (one per line)</label>
+      <textarea id="criteria" required placeholder="Accurate&#10;Actionable&#10;Uses the requested format"></textarea>
+      <button type="submit">Forge and evaluate</button>
+    </form>
+    <p id="status"></p>
+    <section id="result" hidden>
+      <div class="grid">
+        <div class="panel"><h2>Generated agent</h2><pre id="spec"></pre></div>
+        <div class="panel"><h2>Execution output</h2><pre id="output"></pre></div>
+      </div>
+      <div class="panel"><h2>Evaluation</h2><pre id="evaluation"></pre></div>
+      <div class="panel" id="improved-panel" hidden><h2>Improved agent</h2><pre id="improved"></pre></div>
+    </section>
+    <script>
+      const form = document.querySelector("#run-form");
+      const status = document.querySelector("#status");
+      const result = document.querySelector("#result");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        status.className = "";
+        status.textContent = "Forging agent...";
+        result.hidden = true;
+        try {
+          const response = await fetch("/api/run", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              objective: document.querySelector("#objective").value,
+              criteria: document.querySelector("#criteria").value
+            })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Pipeline failed");
+          document.querySelector("#spec").textContent = JSON.stringify(data.agent_spec, null, 2);
+          document.querySelector("#output").textContent = data.output;
+          document.querySelector("#evaluation").textContent = JSON.stringify(data.evaluation, null, 2);
+          const improvedPanel = document.querySelector("#improved-panel");
+          improvedPanel.hidden = !data.improved_spec;
+          if (data.improved_spec) document.querySelector("#improved").textContent = JSON.stringify(data.improved_spec, null, 2);
+          result.hidden = false;
+          status.textContent = data.evaluation.passed ? "Evaluation passed." : "Failures found; an improved agent was generated.";
+        } catch (error) {
+          status.className = "error";
+          status.textContent = error.message;
+        }
+      });
+    </script>
+  </body>
+</html>
