@@ -27,12 +27,17 @@ class LLMConfig:
             raise LLMError(
                 "OPENAI_API_KEY is not configured. Set it before running the pipeline."
             )
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
+        configured_base_url = os.getenv("OPENAI_BASE_URL", "").strip()
+        base_url = configured_base_url or (
+            "https://openrouter.ai/api/v1"
+            if "/" in model
+            else "https://api.openai.com/v1"
+        )
         return cls(
             api_key=api_key,
-            base_url=os.getenv(
-                "OPENAI_BASE_URL", "https://api.openai.com/v1"
-            ).rstrip("/"),
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            base_url=base_url.rstrip("/"),
+            model=model,
             timeout=float(os.getenv("OPENAI_TIMEOUT_SECONDS", "60")),
         )
 
@@ -69,10 +74,11 @@ class OpenAICompatibleClient:
         req = request.Request(
             endpoint,
             data=body,
-            headers={
-                "Authorization": f"Bearer {self.config.api_key}",
-                "Content-Type": "application/json",
-            },
+           headers={
+    "Authorization": f"Bearer {self.config.api_key}",
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0",
+},
             method="POST",
         )
         try:

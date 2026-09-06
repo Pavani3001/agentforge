@@ -11,15 +11,20 @@ in the environment; secrets are never stored in the application:
 
 ```powershell
 $env:OPENAI_API_KEY = "your-key"
-$env:OPENAI_MODEL = "gpt-4o-mini" # optional
+$env:OPENAI_MODEL = "gpt-4o-mini" # optional; slash-qualified models default to OpenRouter
 $env:OPENAI_BASE_URL = "https://api.openai.com/v1" # optional
 python app.py
 ```
 
+For `openai/gpt-oss-20b` and other slash-qualified model IDs, set
+`OPENAI_API_KEY` to the matching provider key. AgentForge defaults those model
+IDs to `https://openrouter.ai/api/v1`; set `OPENAI_BASE_URL` explicitly when
+using another OpenAI-compatible provider.
+
 Open http://127.0.0.1:8000. The API endpoint is `POST /api/run` with:
 
 ```json
-{"objective": "Research a topic", "criteria": ["Accurate", "Cited"]}
+{ "objective": "Research a topic", "criteria": ["Accurate", "Cited"] }
 ```
 
 The pipeline generates a specification, executes it, evaluates the output, and
