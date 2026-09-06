@@ -1,32 +1,74 @@
 # AgentForge
 
-Autonomous AI Agent Builder and Improver.
+AgentForge builds a specialized AI agent, runs it against an objective,
+evaluates the result, and generates an improved specification when the
+evaluation fails.
 
-AgentForge creates specialized AI agents, evaluates their performance, identifies failures, and iteratively improves them.
+## Requirements
+
+- Python 3.10 or newer
+- An API key for an OpenAI-compatible chat-completions provider
+
+The application uses only Python's standard library at runtime.
 
 ## Run locally
 
-AgentForge uses an OpenAI-compatible chat-completions API. Configure the API key
-in the environment; secrets are never stored in the application:
+Set the API key in your PowerShell session. Secrets are read from environment
+variables and are never stored by the application.
+
+### OpenAI
 
 ```powershell
-$env:OPENAI_API_KEY = "your-key"
-$env:OPENAI_MODEL = "gpt-4o-mini" # optional; slash-qualified models default to OpenRouter
-$env:OPENAI_BASE_URL = "https://api.openai.com/v1" # optional
+$env:OPENAI_API_KEY = "your-openai-key"
+$env:OPENAI_MODEL = "gpt-4o-mini"
+$env:OPENAI_BASE_URL = "https://api.openai.com/v1"
 python app.py
 ```
 
-For `openai/gpt-oss-20b` and other slash-qualified model IDs, set
-`OPENAI_API_KEY` to the matching provider key. AgentForge defaults those model
-IDs to `https://openrouter.ai/api/v1`; set `OPENAI_BASE_URL` explicitly when
-using another OpenAI-compatible provider.
+### OpenRouter
 
-Open http://127.0.0.1:8000. The API endpoint is `POST /api/run` with:
+Use an OpenRouter key for slash-qualified model IDs such as
+`openai/gpt-oss-20b`:
 
-```json
-{ "objective": "Research a topic", "criteria": ["Accurate", "Cited"] }
+```powershell
+$env:OPENAI_API_KEY = "your-openrouter-key"
+$env:OPENAI_MODEL = "openai/gpt-oss-20b"
+$env:OPENAI_BASE_URL = "https://openrouter.ai/api/v1"
+python app.py
 ```
 
-The pipeline generates a specification, executes it, evaluates the output, and
-generates an improved specification when evaluation fails. Run tests with
+When `OPENAI_BASE_URL` is omitted, AgentForge uses
+`https://openrouter.ai/api/v1` for model names containing `/`, and
+`https://api.openai.com/v1` for other model names. Set the base URL explicitly
+when using another OpenAI-compatible provider.
+
+Open http://127.0.0.1:8000 after the server starts. To stop the server, press
+`Ctrl+C`.
+
+## API
+
+The web interface calls `POST /api/run` with:
+
+```json
+{
+	"objective": "Research a topic",
+	"criteria": ["Accurate", "Cited"]
+}
+```
+
+`criteria` may also be sent as a newline-separated string. A successful
+response contains the generated `agent_spec`, execution `output`,
+`evaluation`, and an `improved_spec` when the evaluation does not pass.
+
+## Troubleshooting
+
+- `OPENAI_API_KEY is not configured`: set the key in the same PowerShell
+  session used to start `python app.py`.
+- `LLM request failed (403)`: verify that the key belongs to the provider in
+  `OPENAI_BASE_URL` and that the selected model is available there.
+- Address already in use on port `8000`: stop the existing Python server or
+  close the process using that port before starting AgentForge again.
+
+## Tests
+
 `python -m unittest discover -s tests -v`.
